@@ -5,10 +5,12 @@ package com.reginald.swiperefresh;
 
 
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.support.v4.view.ViewCompat;
+import android.util.Log;
 import android.view.View;
 import android.view.animation.AnimationUtils;
 import android.view.animation.Interpolator;
@@ -22,6 +24,7 @@ import android.view.animation.Interpolator;
  * trigger a refresh).
  */
 final class CustomSwipeProgressBar {
+    public static final String TAG = CustomSwipeProgressBar.class.getSimpleName();
 
     // Default progress animation colors are grays.
     private final static int COLOR1 = 0xB3000000;
@@ -94,6 +97,7 @@ final class CustomSwipeProgressBar {
      * Start showing the progress animation.
      */
     void start() {
+        isComplete = false;
         if (!mRunning) {
             mTriggerPercentage = 0;
             mStartTime = AnimationUtils.currentAnimationTimeMillis();
@@ -102,10 +106,12 @@ final class CustomSwipeProgressBar {
         }
     }
 
+    private boolean isComplete;
     /**
      * Stop showing the progress animation.
      */
     void stop() {
+        isComplete = true;
         if (mRunning) {
             mTriggerPercentage = 0;
             mFinishTime = AnimationUtils.currentAnimationTimeMillis();
@@ -134,6 +140,7 @@ final class CustomSwipeProgressBar {
             long elapsed = (now - mStartTime) % ANIMATION_DURATION_MS;
             long iterations = (now - mStartTime) / ANIMATION_DURATION_MS;
             float rawProgress = (elapsed / (ANIMATION_DURATION_MS / 100f));
+            Log.e(TAG, "rawProgress: "+rawProgress );
 
             // If we're not running anymore, that means we're running through
             // the finish animation.
@@ -212,20 +219,21 @@ final class CustomSwipeProgressBar {
                 canvas.restoreToCount(restoreCount);
                 restoreCount = canvas.save();
                 canvas.clipRect(mBounds);
-                drawTrigger(canvas, cx, cy);
+//                drawTrigger(canvas, cx, cy);
             }
             // Keep running until we finish out the last cycle.
             ViewCompat.postInvalidateOnAnimation(mParent);
         } else {
             // Otherwise if we're in the middle of a trigger, draw that.
             if (mTriggerPercentage > 0 && mTriggerPercentage <= 1.0) {
-                drawTrigger(canvas, cx, cy);
+//                    drawTrigger(canvas, cx, cy);
             }
         }
         canvas.restoreToCount(restoreCount);
     }
 
     private void drawTrigger(Canvas canvas, int cx, int cy) {
+        Log.e(TAG, "drawTrigger" );
         mPaint.setColor(mColor1);
         canvas.drawCircle(cx, cy, cx * mTriggerPercentage, mPaint);
     }
@@ -240,12 +248,22 @@ final class CustomSwipeProgressBar {
      * @param pct    the percentage of the view that the circle should cover
      */
     private void drawCircle(Canvas canvas, float cx, float cy, int color, float pct) {
-        mPaint.setColor(color);
+        int blankWidth = 10;
+        int blankAmount = 5;
+        int blankSpace = (mBounds.width()-blankAmount*blankWidth)/ (blankAmount-1);
+        int startOff = (int) (pct* (mBounds.width()/2));
+
+        mPaint.setColor(Color.WHITE);
+        mPaint.setStrokeWidth(mParent.getHeight());
         canvas.save();
-        canvas.translate(cx, cy);
+        canvas.drawColor(Color.BLACK);
+//        canvas.translate(cx, cy);
         float radiusScale = INTERPOLATOR.getInterpolation(pct);
-        canvas.scale(radiusScale, radiusScale);
-        canvas.drawCircle(0, 0, cx, mPaint);
+//        canvas.scale(radiusScale, radiusScale);
+//        canvas.drawCircle(0, 0, cx, mPaint);
+        for (int i = 0; i < blankAmount; i++) {
+            canvas.drawLine(startOff+ (blankSpace+blankWidth) *i, 0, startOff+(blankSpace+blankWidth)*i+blankWidth, 0, mPaint);
+        }
         canvas.restore();
     }
 
